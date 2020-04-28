@@ -95,7 +95,7 @@ public class DojoSarsa {
             bot1.updateStrategy();
             logger.info("board: \n{}", board);
             wins += board.getWinner() == 1 ? 1 : 0;
-            logger.info("success rate: {} %", (wins * 100) / (i+1));
+            logger.info("success rate: {} %", (wins * 100.0000000) / (i+1));
         }
 
         return learner;

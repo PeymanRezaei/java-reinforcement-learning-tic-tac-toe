@@ -3,116 +3,110 @@ package com.github.chen0040.jrl.ttt.dojos;
 import com.github.chen0040.jrl.ttt.Board;
 import com.github.chen0040.jrl.ttt.bots.NaiveBot;
 import com.github.chen0040.jrl.ttt.bots.QBot;
-import com.github.chen0040.rl.actionselection.SoftMaxActionSelectionStrategy;
 import com.github.chen0040.rl.learning.qlearn.QLearner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DojoQ {
 
-    private static final Logger logger = LoggerFactory.getLogger(DojoQ.class);
+  private static final Logger logger = LoggerFactory.getLogger(DojoQ.class);
 
-    public static double test(Board board, QLearner model, int episodes) {
+  public static double test(Board board, QLearner model, int episodes) {
 
-        QBot bot1 = new QBot(1, board, model);
-        NaiveBot bot2 =new NaiveBot(2, board);
+    QBot bot1 = new QBot(1, board, model);
+    NaiveBot bot2 = new NaiveBot(2, board);
 
-        int wins = 0;
-        int loses = 0;
-        for(int i=0; i < episodes; ++i) {
-            bot1.clearHistory();
-            bot2.clearHistory();
+    int wins = 0;
+    for (int i = 0; i < episodes; ++i) {
+      bot1.clearHistory();
+      bot2.clearHistory();
 
-            logger.info("Iteration: {} / {}", (i+1), episodes);
-            board.reset();
-            while (board.canBePlayed()) {
-                bot1.act();
-                bot2.act();
-            }
-            int winner = board.getWinner();
-            logger.info("Winner: {}", winner);
-            wins += winner == 1 ? 1 : 0;
-            loses += winner == 2 ? 1 : 0;
-        }
-
-        return wins * 1.0 / episodes;
-
+      logger.info("Iteration: {} / {}", (i + 1), episodes);
+      board.reset();
+      while (board.canBePlayed()) {
+        bot1.act();
+        bot2.act();
+      }
+      int winner = board.getWinner();
+      logger.info("Winner: {}", winner);
+      wins += winner == 1 ? 1 : 0;
     }
 
-    public static QLearner trainAgainstSelf(Board board, int episodes) {
+    return wins * 1.0 / episodes;
 
+  }
 
-        int stateCount = (int)Math.pow(3, board.size() * board.size());
-        int actionCount = board.size() * board.size();
+  public static QLearner trainAgainstSelf(Board board, int episodes) {
 
-        QLearner learner = new QLearner(stateCount, actionCount);
-        //learner.setActionSelection(SoftMaxActionSelectionStrategy.class.getCanonicalName());
+    int stateCount = (int) Math.pow(3, board.size() * board.size());
+    int actionCount = board.size() * board.size();
 
-        QBot bot1 = new QBot(1, board, learner);
-        QBot bot2 =new QBot(2, board, learner);
+    QLearner learner = new QLearner(stateCount, actionCount);
+    //learner.setActionSelection(SoftMaxActionSelectionStrategy.class.getCanonicalName());
 
-        for(int i=0; i < episodes; ++i) {
-            bot1.clearHistory();
-            bot2.clearHistory();
+    QBot bot1 = new QBot(1, board, learner);
+    QBot bot2 = new QBot(2, board, learner);
 
-            logger.info("Iteration: {} / {}", (i+1), episodes);
-            board.reset();
-            while (board.canBePlayed()) {
-                bot1.act();
-                bot2.act();
-            }
-            logger.info("winner: {}", board.getWinner());
-            bot1.updateStrategy();
-            bot2.updateStrategy();
-            logger.info("board: \n{}", board);
-        }
+    for (int i = 0; i < episodes; ++i) {
+      bot1.clearHistory();
+      bot2.clearHistory();
 
-        return learner;
+      logger.info("Iteration: {} / {}", (i + 1), episodes);
+      board.reset();
+      while (board.canBePlayed()) {
+        bot1.act();
+        bot2.act();
+      }
+      logger.info("winner: {}", board.getWinner());
+      bot1.updateStrategy();
+      bot2.updateStrategy();
+      logger.info("board: \n{}", board);
     }
 
-    public static QLearner trainAgainstNaiveBot(Board board, int episodes) {
+    return learner;
+  }
 
+  public static QLearner trainAgainstNaiveBot(Board board, int episodes) {
 
-        int stateCount = (int)Math.pow(3, board.size() * board.size());
-        int actionCount = board.size() * board.size();
+    int stateCount = (int) Math.pow(3, board.size() * board.size());
+    int actionCount = board.size() * board.size();
 
-        QLearner learner = new QLearner(stateCount, actionCount);
-        //learner.setActionSelection(SoftMaxActionSelectionStrategy.class.getCanonicalName());
+    QLearner learner = new QLearner(stateCount, actionCount);
+    //learner.setActionSelection(SoftMaxActionSelectionStrategy.class.getCanonicalName());
 
-        QBot bot1 = new QBot(1, board, learner);
-        NaiveBot bot2 =new NaiveBot(2, board);
+    QBot bot1 = new QBot(1, board, learner);
+    NaiveBot bot2 = new NaiveBot(2, board);
 
-        int wins = 0;
+    int wins = 0;
 
-        for(int i=0; i < episodes; ++i) {
-            bot1.clearHistory();
-            bot2.clearHistory();
+    for (int i = 0; i < episodes; ++i) {
+      bot1.clearHistory();
+      bot2.clearHistory();
 
-            logger.info("Iteration: {} / {}", (i+1), episodes);
-            board.reset();
-            while (board.canBePlayed()) {
-                bot1.act();
-                bot2.act();
-            }
-            logger.info("winner: {}", board.getWinner());
-            bot1.updateStrategy();
-            logger.info("board: \n{}", board);
+      logger.info("Iteration: {} / {}", (i + 1), episodes);
+      board.reset();
+      while (board.canBePlayed()) {
+        bot1.act();
+        bot2.act();
+      }
+      logger.info("winner: {}", board.getWinner());
+      bot1.updateStrategy();
+      logger.info("board: \n{}", board);
 
-            wins += board.getWinner() == 1 ? 1 : 0;
-            logger.info("success rate: {} %", (wins * 100) / (i+1));
-        }
-
-        return learner;
+      wins += board.getWinner() == 1 ? 1 : 0;
+      logger.info("success rate: {} %", (wins * 100.000000) / (i + 1));
     }
 
-    public static void main(String[] args) {
+    return learner;
+  }
 
-        Board board = new Board();
-        QLearner model = trainAgainstNaiveBot(board, 30000);
+  public static void main(String[] args) {
 
+    Board board = new Board();
+    QLearner model = trainAgainstNaiveBot(board, 30000);
 
-        double cap = test(board, model, 1000);
-        logger.info("Q-Learn Bot beats Random Bot in {} % of the games", cap * 100);
-    }
+    double cap = test(board, model, 1000);
+    logger.info("Q-Learn Bot beats Random Bot in {} % of the games", cap * 100);
+  }
 
 }

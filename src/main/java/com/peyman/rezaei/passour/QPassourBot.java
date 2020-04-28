@@ -1,29 +1,26 @@
-package com.github.chen0040.jrl.ttt.bots;
+package com.peyman.rezaei.passour;
 
-import com.github.chen0040.jrl.ttt.Board;
 import com.github.chen0040.jrl.ttt.Move;
-import com.github.chen0040.jrl.ttt.Position;
 import com.github.chen0040.rl.learning.qlearn.QLearner;
 import com.github.chen0040.rl.utils.IndexValue;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public class QBot extends Bot {
+public class QPassourBot extends PassourBot {
 
   private final QLearner agent;
 
-  public QBot(int color, Board board, QLearner learner) {
-    super(color, board);
+  public QPassourBot(int id, QLearner learner) {
+    super(id);
     this.agent = learner;
   }
 
   @Override
-  public void act() {
+  public void act(PassourGame game) {
     int state = getState();
 
-    Set<Integer> possibleActions = getPossibleActions();
-    List<Integer> possibleActionList = new ArrayList<>(possibleActions);
+    var possiblePlays = getPossiblePlays(game.getTable());
+    Set<Integer> possibleActions = possiblePlays.stream().map(Play::getIndex).collect(Collectors.toSet());
 
     int action = -1;
     if (!possibleActions.isEmpty()) {
@@ -32,12 +29,10 @@ public class QBot extends Bot {
       double value = iv.getValue();
 
       if (value <= 0) {
-        action = possibleActionList.get(random.nextInt(possibleActionList.size()));
+        action = possiblePlays.get(random.nextInt(possiblePlays.size())).getIndex();
       }
 
-      Position pos = Position.fromInteger(board, action);
-
-      board.move(pos, color);
+      play(possiblePlays.get(action), game);
     }
 
     if (action != -1) {
@@ -47,12 +42,9 @@ public class QBot extends Bot {
   }
 
   @Override
-  public void updateStrategy() {
+  public void updateStrategy(PassourGame game) {
 
-    int winner = board.getWinner();
-    int strategyColor = getStrategyColor(winner);
-
-    double reward = REWARD[strategyColor];
+    double reward = this.reward[game.didIWin(getId())];
 
     for (int i = moves.size() - 1; i >= 0; --i) {
       Move move = moves.get(i);
