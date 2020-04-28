@@ -27,6 +27,8 @@ public abstract class PassourBot {
   private final Set<Card> hand;
   @Getter
   private final Set<Card> stack;
+  @Getter
+  private final List<Play> plays;
 
   @Setter(AccessLevel.PACKAGE)
   private int sour;
@@ -44,6 +46,7 @@ public abstract class PassourBot {
     this.id = id;
     hand = new HashSet<>();
     stack = new HashSet<>();
+    plays = new ArrayList<>();
 
     reward[0] = -3;
     reward[1] = 100;
@@ -82,7 +85,14 @@ public abstract class PassourBot {
           allCardsButPics.add(card);
         }
         possiblePlays.remove(noWinPlay);
-        possiblePlays.add(Play.builder().player(this).card(card).wonCards(allCardsButPics).build());
+        possiblePlays.add(
+            Play.builder()
+                .player(this)
+                .card(card)
+                .wonCards(allCardsButPics)
+                .numberOfClubsYet(countClubs())
+                .build()
+        );
       } else {
         for (var combination : combinations) {
           // Queen and King
@@ -90,7 +100,14 @@ public abstract class PassourBot {
             Card c = combination.iterator().next();
             if (card.getNumber() == c.getNumber()) {
               possiblePlays.remove(noWinPlay);
-              possiblePlays.add(Play.builder().player(this).card(card).wonCards(Set.of(card, c)).build());
+              possiblePlays.add(
+                  Play.builder()
+                      .player(this)
+                      .card(card)
+                      .wonCards(Set.of(card, c))
+                      .numberOfClubsYet(countClubs())
+                      .build()
+              );
             }
           }
           //other cards
@@ -98,7 +115,14 @@ public abstract class PassourBot {
             int sum = combination.stream().map(Card::getNumber).reduce(Integer::sum).orElse(0);
             if (card.getNumber() + sum == 11) {
               possiblePlays.remove(noWinPlay);
-              possiblePlays.add(Play.builder().player(this).card(card).wonCards(Sets.union(combination, Set.of(card))).build());
+              possiblePlays.add(
+                  Play.builder()
+                      .player(this)
+                      .card(card)
+                      .wonCards(Sets.union(combination, Set.of(card)))
+                      .numberOfClubsYet(countClubs())
+                      .build()
+              );
             }
           }
         }
@@ -107,27 +131,23 @@ public abstract class PassourBot {
     return possiblePlays;
   }
 
-  public void play(Play play, PassourGame game) {
-    game.getPlays().add(play);
+  protected void play(Play play, PassourGame game) {
+    getPlays().add(play);
     hand.remove(play.getCard());
     stack.addAll(play.getWonCards());
     game.getTable().add(play.getCard());
     game.getTable().removeAll(play.getWonCards());
-    if (game.canBePlayed() && game.getTable().isEmpty() && play.getCard().getNumber() != 11) {
+    if (!play.getWonCards().isEmpty()) {
+      game.setLastWinner(this);
+    }
+    if (play.isSour()) {
       sour++;
     }
     if (hand.isEmpty()) {
       if (game.canBePlayed()) {
         hand.addAll(game.dealHand());
       } else {
-        if (game.getPlays()
-            .stream()
-            .filter(p -> !p.getWonCards().isEmpty())
-            .reduce((play1, play2) -> play2)
-            .map(Play::getPlayer)
-            .map(PassourBot::getId)
-            .filter(i -> i == this.getId())
-            .isPresent()) {
+        if (this.equals(game.getLastWinner())) {
           stack.addAll(game.getTable());
         }
       }
@@ -135,43 +155,21 @@ public abstract class PassourBot {
 
   }
 
-  public long getPoints() {
-    // Jacks and Aces
-    var points = stack.stream().map(Card::getNumber).filter(n -> n == 1 || n == 11).count();
-
-    //10 Diamond
-    points += stack.stream()
-        .filter(card -> Card.of(10, Color.DIAMOND).equals(card))
-        .map(card -> 3)
-        .findAny()
-        .orElse(0);
-
-    // 2 Clubs
-    points += stack.stream()
-        .filter(card -> Card.of(2, Color.CLUB).equals(card))
-        .map(card -> 2)
-        .findAny()
-        .orElse(0);
-
-    var clubCount = stack.stream()
-        .map(Card::getColor)
-        .map(Color::getIndex)
-        .filter(index -> index == 0)
-        .count();
-    if (clubCount >= 7) {
-      points += 7;
-    }
-
-//    points += sour * 5;
-
+  public int getPoints() {
+    Integer points = plays.stream().map(Play::getPoints).reduce(Integer::sum).orElse(0);
     log.info("Player {} has {} points", id, points);
     return points;
+  }
+
+  private int countClubs() {
+    return (int) hand.stream().map(Card::getColor).filter(color -> color == Color.CLUB).count();
   }
 
   public void reset() {
     hand.clear();
     stack.clear();
     moves.clear();
+    plays.clear();
     sour = 0;
   }
 }

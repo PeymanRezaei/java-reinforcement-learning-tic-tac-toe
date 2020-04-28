@@ -1,12 +1,11 @@
 package com.peyman.rezaei.passour;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Getter
@@ -17,7 +16,9 @@ public class PassourGame {
   private final Deck deck;
   private final PassourBot player1;
   private final PassourBot player2;
-  private final List<Play> plays;
+
+  @Setter
+  private PassourBot lastWinner;
 
   @Getter(AccessLevel.NONE)
   private final Random random;
@@ -28,7 +29,6 @@ public class PassourGame {
     random = new Random();
     deck = new Deck();
     table = new HashSet<>();
-    plays = new ArrayList<>();
     setTable();
     player1.getHand().addAll(dealHand());
     player2.getHand().addAll(dealHand());
@@ -83,10 +83,6 @@ public class PassourGame {
     // Loss
     log.info("Player {} lost", id);
     return 2;
-  }
-
-  public int getRound() {
-    return 7 - (deck.size() - 4) / 8;
   }
 
   public boolean canBePlayed() {
