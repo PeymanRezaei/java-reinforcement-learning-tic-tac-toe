@@ -59,6 +59,7 @@ public class State {
     return COUNT;
   }
 
+
   public int getStateIndex() {
     return getPossibleStates().indexOf(Sets.intersection(getPointCards(), stack));
   }
